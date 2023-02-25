@@ -96,7 +96,7 @@ byte mul9_box[256] = {
     0x31, 0x38, 0x23, 0x2a, 0x15, 0x1c, 0x07, 0x0e, 0x79, 0x70, 0x6b, 0x62, 0x5d, 0x54, 0x4f, 0x46,
 };
 
-byte* rotWord(byte* inp)
+byte *rotWord(byte *inp)
 {
     static byte res[4];
     res[0] = inp[1];
@@ -106,7 +106,7 @@ byte* rotWord(byte* inp)
     return res;
 }
 
-byte* subWord(byte* inp)
+byte *subWord(byte *inp)
 {
     static byte res[4];
     res[0] = sub_box[inp[0]];
@@ -116,7 +116,7 @@ byte* subWord(byte* inp)
     return res;
 }
 
-byte* rcon(int inp)
+byte *rcon(int inp)
 {
     static byte res[4];
     res[0] = rcon_box[inp];
@@ -126,13 +126,13 @@ byte* rcon(int inp)
     return res;
 }
 
-byte* expandKey(byte* key)
+byte *expandKey(byte *key)
 {
-    static byte res[128];
+    static byte res[176];
     for (int i = 0; i < 16; i++)
         res[i] = key[i];
 
-    for(int i = 1; i < 11; i++)
+    for (int i = 1; i < 11; i++)
     {
         byte *tmp = rotWord(res + (i - 1) * 16 + 12);
         res[i * 16] = tmp[0];
@@ -140,7 +140,7 @@ byte* expandKey(byte* key)
         res[i * 16 + 2] = tmp[2];
         res[i * 16 + 3] = tmp[3];
 
-        byte* tmp2 = subWord(res + i * 16);
+        byte *tmp2 = subWord(res + i * 16);
         res[i * 16] = tmp2[0];
         res[i * 16 + 1] = tmp2[1];
         res[i * 16 + 2] = tmp2[2];
@@ -157,7 +157,7 @@ byte* expandKey(byte* key)
         res[i * 16 + 2] ^= tmp3[2];
         res[i * 16 + 3] ^= tmp3[3];
 
-        for(int j = 1; j <= 3; j++)
+        for (int j = 1; j <= 3; j++)
         {
             res[i * 16 + j * 4] = res[i * 16 + (j - 1) * 4] ^ res[(i - 1) * 16 + j * 4];
             res[i * 16 + j * 4 + 1] = res[i * 16 + (j - 1) * 4 + 1] ^ res[(i - 1) * 16 + j * 4 + 1];
@@ -168,20 +168,20 @@ byte* expandKey(byte* key)
     return res;
 }
 
-byte* subBytes(byte state[16])
+byte *subBytes(byte state[16])
 {
     static byte res[16];
-    for(int i = 0; i < 16; i++)
+    for (int i = 0; i < 16; i++)
     {
         res[i] = sub_box[state[i]];
     }
     return res;
 }
 
-byte* shiftRows(byte state[16])
+byte *shiftRows(byte state[16])
 {
     static byte res[16];
-    for(int i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++)
     {
         res[i] = state[i + 4 * ((0 + i) % 4)];
         res[i + 4] = state[i + 4 * ((1 + i) % 4)];
@@ -191,10 +191,10 @@ byte* shiftRows(byte state[16])
     return res;
 }
 
-byte* mixColumns(byte state[16])
+byte *mixColumns(byte state[16])
 {
     static byte res[16];
-    for(int i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++)
     {
         byte a = state[i * 4];
         byte b = state[i * 4 + 1];
@@ -208,7 +208,7 @@ byte* mixColumns(byte state[16])
     return res;
 }
 
-byte* addRoundKey(byte* state, byte* key)
+byte *addRoundKey(byte *state, byte *key)
 {
     static byte res[16];
     for (int j = 0; j < 16; j++)
@@ -218,13 +218,13 @@ byte* addRoundKey(byte* state, byte* key)
     return res;
 }
 
-void printState(byte* pt)
+void printState(byte *pt)
 {
     for (int i = 0; i < 4; i++)
     {
         for (int j = 0; j < 4; j++)
         {
-            if(pt[j * 4 + i] < 16)
+            if (pt[j * 4 + i] < 16)
                 printf("0");
             printf("%x ", pt[j * 4 + i]);
         }
@@ -232,54 +232,34 @@ void printState(byte* pt)
     }
 }
 
-byte* encrypt(byte pt[16], byte key[16])
+byte *encrypt(byte pt[16], byte key[16])
 {
+    printf("input:\n");
+    printState(pt);
     int round = 0;
     static byte *res;
-    byte* expKey = expandKey(key);
-
+    byte *expKey = expandKey(key);
     res = addRoundKey(pt, expKey);
     round++;
-
-    for(; round <= 9; round++)
+    printState(res);
+    for (; round <= 9; round++)
     {
         res = subBytes(res);
         res = shiftRows(res);
         res = mixColumns(res);
         res = addRoundKey(res, expKey + round * 16);
+        printState(res);
     }
     res = subBytes(res);
     res = shiftRows(res);
     res = addRoundKey(res, expKey + round * 16);
+    return res;
 }
 
 int main()
 {
-    // byte *res = expandKey(key);
-    // for (int i = 0; i < 176; i++)
-    // {
-    //     if(i % 16 == 0)
-    //         printf("\n");
-    //     if(res[i] < 16)
-    //         printf("0");
-    //     printf("%x", res[i]);
-    // }
-    // printState(tmp);
-    // printf("\n");
-
-    // byte* tmp2 = subBytes(tmp);
-    // printState(tmp2);
-    // printf("\n");
-
-    // byte* tmp3 = shiftRows(tmp2);
-    // printState(tmp3);
-    // printf("\n");
-
-    // byte* tmp4 = mixColumns(tmp3);
-    // printState(tmp4);
-
-    char *pt = "theblockbreakers";
+    byte pt[16] = {0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d, 0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34};
     byte key[16] = {0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c};
-    byte* res = encrypt(pt, key);
+    byte *res = encrypt(pt, key);
     printState(res);
 }
