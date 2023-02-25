@@ -234,21 +234,17 @@ void printState(byte *pt)
 
 byte *encrypt(byte pt[16], byte key[16])
 {
-    printf("input:\n");
-    printState(pt);
     int round = 0;
     static byte *res;
     byte *expKey = expandKey(key);
     res = addRoundKey(pt, expKey);
     round++;
-    printState(res);
     for (; round <= 9; round++)
     {
         res = subBytes(res);
         res = shiftRows(res);
         res = mixColumns(res);
         res = addRoundKey(res, expKey + round * 16);
-        printState(res);
     }
     res = subBytes(res);
     res = shiftRows(res);
