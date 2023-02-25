@@ -311,6 +311,23 @@ byte *mixColumns(byte state[16])
     return res;
 }
 
+byte *mixColumnsInv(byte state[16])
+{
+    byte *res = malloc(16);
+    for (int i = 0; i < 4; i++)
+    {
+        byte a = state[i * 4];
+        byte b = state[i * 4 + 1];
+        byte c = state[i * 4 + 2];
+        byte d = state[i * 4 + 3];
+        res[i * 4] = mul14_box[a] ^ mul11_box[b] ^ mul13_box[c] ^ mul9_box[d];
+        res[i * 4 + 1] = mul9_box[a] ^ mul14_box[b] ^ mul11_box[c] ^ mul13_box[d];
+        res[i * 4 + 2] = mul13_box[a] ^ mul9_box[b] ^ mul14_box[c] ^ mul11_box[d];
+        res[i * 4 + 3] = mul11_box[a] ^ mul13_box[b] ^ mul9_box[c] ^ mul14_box[d];
+    }
+    return res;
+}
+
 byte *addRoundKey(byte *state, byte *key)
 {
     byte *res = malloc(16);
@@ -338,10 +355,9 @@ void printState(byte *pt)
 byte *encrypt(byte pt[16], byte key[16])
 {
     byte *res = malloc(16);
-    int round = 0;
     byte *expKey = expandKey(key);
     res = addRoundKey(pt, expKey);
-    round++;
+    int round = 1;
     for (; round <= 9; round++)
     {
         res = subBytes(res);
@@ -356,11 +372,34 @@ byte *encrypt(byte pt[16], byte key[16])
     return res;
 }
 
+byte *decrypt(byte ct[16], byte key[16])
+{
+    byte *res = malloc(16);
+    byte *expKey = expandKey(key);
+    res = ct;
+    res = addRoundKey(res, expKey + 160);
+    res = shiftRowsInv(res);
+    res = subBytesInv(res);
+    int round = 9;
+    for (; round >= 1; round--)
+    {
+        res = addRoundKey(res, expKey + round * 16);
+        res = mixColumnsInv(res);
+        res = shiftRowsInv(res);
+        res = subBytesInv(res);
+    }
+    res = addRoundKey(res, expKey);
+    return res;
+}
+
 int main()
 {
     byte pt[16] = {0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d, 0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34};
     byte key[16] = {0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c};
     byte *res = encrypt(pt, key);
+    printState(res);
+    printf("\n");
+    res = decrypt(res, key);
     printState(res);
     free(res);
 }
